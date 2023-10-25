@@ -44,16 +44,21 @@ async def main():
     await bluetooth.disconnect()
 
     print(bluetooth.is_connected())
-    await bluetooth.connect(
-        lua_response_handler,
-        data_response_handler,
-        disconnect_handler,
-    )
+    await bluetooth.connect()
 
     print(await bluetooth.send_lua("print('hi again')", show_me=True, wait=True))
     await asyncio.sleep(1)
 
     await bluetooth.send_data(bytearray(b"abc"), show_me=True)
+    await asyncio.sleep(1)
+
+    await bluetooth.disconnect()
+
+    bluetooth = Bluetooth()
+    await bluetooth.connect()
+
+    print(await bluetooth.send_lua("print('hello world')", wait=True))
+    print(await bluetooth.send_lua("print(1 + 2)", wait=False))
     await asyncio.sleep(1)
 
     await bluetooth.disconnect()

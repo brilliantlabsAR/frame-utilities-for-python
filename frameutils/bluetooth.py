@@ -41,8 +41,8 @@ class Bluetooth:
 
     async def connect(
         self,
-        lua_response_handler: callable,
-        data_response_handler: callable,
+        lua_response_handler=lambda string: print(f"{string}"),
+        data_response_handler=lambda data: print(f"{data}"),
         disconnect_handler=lambda: None,
     ):
         """
@@ -52,7 +52,7 @@ class Bluetooth:
         from the device, and `data_response_handler` will be called whenever raw
         data is received from the device.
 
-        Optionally, a `disconnect_handler` can be provided to be called to run
+        `disconnect_handler` can be provided to be called to run
         upon a disconnect.
         """
         self._user_disconnect_handler = disconnect_handler
