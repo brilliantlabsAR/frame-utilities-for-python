@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "frameutils"
+version = "0.0.1"
+authors = [{ name = "Brilliant Labs", email = "info@brilliant.xyz" }]
+description = "Useful utilities for your Brilliant Frame AR glasses"
+readme = "readme.md"
+requires-python = ">=3.7"
+license = { file = "license.md" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/brilliantlabsAR/frame-utilities-for-python"
+"Bug Tracker" = "https://github.com/brilliantlabsAR/frame-utilities-for-python/issues"
