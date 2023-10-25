@@ -1,26 +1,24 @@
 import asyncio
-import time
 from frameutils import Bluetooth
 
 
 def disconnect_handler():
-    print("Disconnected!")
-
-
-def data_received_handler(data: bytearray):
-    print(data.decode(), end="", flush=True)
+    print("Disconnected user callback!")
 
 
 async def main():
     bluetooth = Bluetooth()
-    await bluetooth.connect(disconnect_handler, data_received_handler)
-    await bluetooth.send_lua("print('hi')")
-    time.sleep(1)
-    await bluetooth.send_lua("print(5+6)")
-    time.sleep(1)
+    await bluetooth.connect()
 
-    while True:
-        pass
+    print(await bluetooth.send_lua("print('hello')"))
+    await asyncio.sleep(1)
+
+    print(await bluetooth.send_lua("print('world')"))
+    await asyncio.sleep(1)
+
+    print(await bluetooth.send_lua("print(4 + 6)"))
+    print(await bluetooth.send_lua("print(6 + 6)"))
+    await asyncio.sleep(3)
 
     await bluetooth.disconnect()
 
