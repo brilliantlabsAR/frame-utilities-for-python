@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "frameutils"
-version = "0.0.2"
+version = "0.1.0"
 authors = [{ name = "Brilliant Labs", email = "info@brilliant.xyz" }]
 description = "Useful utilities for your Brilliant Frame AR glasses"
 readme = "readme.md"
