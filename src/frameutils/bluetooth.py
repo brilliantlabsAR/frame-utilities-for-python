@@ -164,3 +164,21 @@ class Bluetooth:
         If `show_me=True`, the exact bytes send to the device will be printed.
         """
         await self._transmit(bytearray(b"\x01") + data, show_me=show_me)
+
+    async def send_reset_signal(self, show_me=False):
+        """
+        Sends a reset signal to the device which will reset the Lua virtual
+        machine.
+
+        If `show_me=True`, the exact bytes send to the device will be printed.
+        """
+        await self._transmit(bytearray(b"\x04"), show_me=show_me)
+
+    async def send_break_signal(self, show_me=False):
+        """
+        Sends a break signal to the device which will break any currently
+        executing Lua script.
+
+        If `show_me=True`, the exact bytes send to the device will be printed.
+        """
+        await self._transmit(bytearray(b"\x03"), show_me=show_me)

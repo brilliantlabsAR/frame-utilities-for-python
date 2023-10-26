@@ -1,6 +1,8 @@
 import asyncio
+import sys
 
-from frameutils import Bluetooth
+sys.path.append("..")
+from src.frameutils import Bluetooth
 
 
 def disconnect_handler():
