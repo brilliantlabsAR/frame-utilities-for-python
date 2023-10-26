@@ -1,70 +1,55 @@
+import unittest
 import asyncio
 import sys
+import logging
 
 sys.path.append("..")
 from src.frameutils import Bluetooth
 
 
-def disconnect_handler():
-    print("Disconnected user callback!")
+class TestBluetooth(unittest.IsolatedAsyncioTestCase):
+    async def test_connect_disconnect(self):
+        b = Bluetooth()
+
+        self.assertFalse(b.is_connected())
+
+        await b.connect()
+        self.assertTrue(b.is_connected())
+
+        await b.disconnect()
+        self.assertFalse(b.is_connected())
+
+    async def test_send_lua(self):
+        b = Bluetooth()
+        await b.connect(lua_response_handler=lambda string: None)
+
+        self.assertEqual(await b.send_lua("print('hi')", wait=True), "hi")
+
+        self.assertIsNone(await b.send_lua("print('hi')"))
+        await asyncio.sleep(0.1)
+
+        with self.assertRaises(Exception):
+            await b.send_lua("a = 1", wait=True)
+
+        await b.disconnect()
+
+    async def test_mtu(self):
+        b = Bluetooth()
+        await b.connect()
+
+        max_lua_length = b.max_lua_payload()
+        max_data_length = b.max_data_payload()
+
+        self.assertEqual(max_lua_length, max_data_length + 1)
+
+        with self.assertRaises(Exception):
+            await b.send_lua("a" * max_lua_length + 1)
+
+        with self.assertRaises(Exception):
+            await b.send_data(bytearray(b"a" * max_data_length + 1))
+
+        await b.disconnect()
 
 
-def lua_response_handler(string):
-    print(f"Response: {string}")
-
-
-def data_response_handler(data):
-    print(f"Response: {data}")
-
-
-async def main():
-    bluetooth = Bluetooth()
-
-    print(bluetooth.is_connected())
-
-    await bluetooth.connect(
-        lua_response_handler,
-        data_response_handler,
-    )
-
-    print(bluetooth.is_connected())
-    print(bluetooth.max_lua_payload())
-    print(bluetooth.max_data_payload())
-
-    print(await bluetooth.send_lua("print('hello')", show_me=True, wait=True))
-    await asyncio.sleep(1)
-
-    print(await bluetooth.send_lua("print('world')", wait=True))
-    await asyncio.sleep(1)
-
-    await bluetooth.send_lua("a = 5")
-    await asyncio.sleep(1)
-
-    print(await bluetooth.send_lua("print(a + 6)", wait=True))
-    print(await bluetooth.send_lua("print(6 + 6)", wait=True))
-    await asyncio.sleep(3)
-
-    await bluetooth.disconnect()
-
-    print(bluetooth.is_connected())
-    await bluetooth.connect()
-
-    print(await bluetooth.send_lua("print('hi again')", show_me=True, wait=True))
-    await asyncio.sleep(1)
-
-    await bluetooth.send_data(bytearray(b"abc"), show_me=True)
-    await asyncio.sleep(1)
-
-    await bluetooth.disconnect()
-
-    bluetooth = Bluetooth()
-    await bluetooth.connect()
-
-    print(await bluetooth.send_lua("print('hello world')", wait=True))
-    print(await bluetooth.send_lua("print(1 + 2)", wait=False))
-    await asyncio.sleep(1)
-
-    await bluetooth.disconnect()
-
-
-asyncio.run(main())
+if __name__ == "__main__":
+    unittest.main()
