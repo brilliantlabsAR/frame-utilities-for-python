@@ -1,7 +1,6 @@
 import unittest
 import asyncio
 import sys
-import logging
 
 sys.path.append("..")
 from src.frameutils import Bluetooth

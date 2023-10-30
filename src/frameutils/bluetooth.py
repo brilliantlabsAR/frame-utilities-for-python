@@ -30,13 +30,12 @@ class Bluetooth:
         self.__init__()
 
     async def _notification_handler(self, _, data):
-        if self._awaiting_response:
-            self._awaiting_response = False
-            self._response_data = data
+        if data[0] == 1:
+            self._user_data_response_handler(data[1:])
         else:
-            if data[0] == 1:
-                self._user_data_response_handler(data[1:])
-            else:
+            if self._awaiting_response:
+                self._awaiting_response = False
+                self._response_data = data
                 self._user_lua_response_handler(data.decode())
 
     async def connect(
