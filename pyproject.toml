@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "frameutils"
-version = "0.1.0"
+version = "0.1.1"
 authors = [{ name = "Brilliant Labs", email = "info@brilliant.xyz" }]
 description = "Useful utilities for your Brilliant Frame AR glasses"
 readme = "readme.md"
@@ -14,6 +14,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
+dependencies = ["bleak"]
 
 [project.urls]
 "Homepage" = "https://github.com/brilliantlabsAR/frame-utilities-for-python"
