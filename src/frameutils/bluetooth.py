@@ -145,7 +145,7 @@ class Bluetooth:
 
         if wait:
             self._awaiting_response = True
-            countdown = 2000
+            countdown = 5000
 
             while self._awaiting_response:
                 await asyncio.sleep(0.001)
