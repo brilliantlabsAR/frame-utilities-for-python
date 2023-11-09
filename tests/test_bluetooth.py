@@ -32,6 +32,26 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
         await b.disconnect()
 
+    async def test_send_data(self):
+        b = Bluetooth()
+        await b.connect()
+
+        await b.send_lua(
+            "frame.bluetooth.receive_callback((function(d)frame.bluetooth.send(d)end))"
+        )
+
+        self.assertEqual(await b.send_data(b"test", await_data=True), b"test")
+
+        self.assertIsNone(await b.send_data(b"test"))
+        await asyncio.sleep(0.1)
+
+        await b.send_lua("frame.bluetooth.receive_callback(nil)")
+
+        with self.assertRaises(Exception):
+            await b.send_data(b"test", await_data=True)
+
+        await b.disconnect()
+
     async def test_mtu(self):
         b = Bluetooth()
         await b.connect()

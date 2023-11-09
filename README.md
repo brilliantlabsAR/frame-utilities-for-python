@@ -30,3 +30,11 @@ async def main():
 asyncio.run(main())
 
 ```
+
+## Tests
+
+To run the unit tests, ensure you have an unconnected Frame device in range, and then run:
+
+```sh
+python3 -m pytest tests/test_bluetooth.py
+```

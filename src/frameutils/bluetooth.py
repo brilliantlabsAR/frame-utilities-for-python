@@ -14,9 +14,11 @@ class Bluetooth:
     _RX_CHARACTERISTIC_UUID = "7a230003-5475-a6a4-654c-8431f6ad49c4"
 
     def __init__(self):
-        self._awaiting_response = False
+        self._awaiting_print_response = False
+        self._awaiting_data_response = False
         self._client = None
-        self._response_data = bytearray()
+        self._print_response = bytearray()
+        self._data_response = bytearray()
         self._tx_characteristic = None
         self._user_data_response_handler = lambda: None
         self._user_disconnect_handler = lambda: None
@@ -31,11 +33,14 @@ class Bluetooth:
 
     async def _notification_handler(self, _, data):
         if data[0] == 1:
+            if self._awaiting_data_response:
+                self._awaiting_data_response = False
+                self._data_response = data[1:]
             self._user_data_response_handler(data[1:])
         else:
-            if self._awaiting_response:
-                self._awaiting_response = False
-                self._response_data = data
+            if self._awaiting_print_response:
+                self._awaiting_print_response = False
+                self._print_response = data.decode()
             self._user_print_response_handler(data.decode())
 
     async def connect(
@@ -142,25 +147,40 @@ class Bluetooth:
         await self._transmit(string.encode(), show_me=show_me)
 
         if await_print:
-            self._awaiting_response = True
+            self._awaiting_print_response = True
             countdown = 5000
 
-            while self._awaiting_response:
+            while self._awaiting_print_response:
                 await asyncio.sleep(0.001)
                 if countdown == 0:
                     raise Exception("device didn't respond")
                 countdown -= 1
 
-            return self._response_data.decode()
+            return self._print_response
 
-    async def send_data(self, data: bytearray, show_me=False):
+    async def send_data(self, data: bytearray, show_me=False, await_data=False):
         """
         Sends raw data to the device. The payload length must be less than or
         equal to `max_data_payload()`.
 
+        If `await_data=True`, the function will block until a data response
+        occurs, or a timeout.
+
         If `show_me=True`, the exact bytes send to the device will be printed.
         """
         await self._transmit(bytearray(b"\x01") + data, show_me=show_me)
+
+        if await_data:
+            self._awaiting_data_response = True
+            countdown = 5000
+
+            while self._awaiting_data_response:
+                await asyncio.sleep(0.001)
+                if countdown == 0:
+                    raise Exception("device didn't respond")
+                countdown -= 1
+
+            return self._data_response
 
     async def send_reset_signal(self, show_me=False):
         """
