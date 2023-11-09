@@ -20,15 +20,15 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
     async def test_send_lua(self):
         b = Bluetooth()
-        await b.connect(lua_response_handler=lambda string: None)
+        await b.connect()
 
-        self.assertEqual(await b.send_lua("print('hi')", wait=True), "hi")
+        self.assertEqual(await b.send_lua("print('hi')", await_print=True), "hi")
 
         self.assertIsNone(await b.send_lua("print('hi')"))
         await asyncio.sleep(0.1)
 
         with self.assertRaises(Exception):
-            await b.send_lua("a = 1", wait=True)
+            await b.send_lua("a = 1", await_print=True)
 
         await b.disconnect()
 

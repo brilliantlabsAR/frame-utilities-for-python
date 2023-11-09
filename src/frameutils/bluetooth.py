@@ -20,7 +20,7 @@ class Bluetooth:
         self._tx_characteristic = None
         self._user_data_response_handler = lambda: None
         self._user_disconnect_handler = lambda: None
-        self._user_lua_response_handler = lambda: None
+        self._user_print_response_handler = lambda: None
 
     def _filter_uuid(self, _, adv):
         return self._SERVICE_UUID in adv.service_uuids
@@ -36,26 +36,25 @@ class Bluetooth:
             if self._awaiting_response:
                 self._awaiting_response = False
                 self._response_data = data
-                self._user_lua_response_handler(data.decode())
+            self._user_print_response_handler(data.decode())
 
     async def connect(
         self,
-        lua_response_handler=lambda string: print(f"{string}"),
-        data_response_handler=lambda data: print(f"{data}"),
+        print_response_handler=lambda _: None,
+        data_response_handler=lambda _: None,
         disconnect_handler=lambda: None,
     ):
         """
         Connects to the nearest Frame device.
 
-        `lua_response_handler` will be called whenever string data is received
-        from the device, and `data_response_handler` will be called whenever raw
-        data is received from the device.
+        `print_response_handler` and `data_response_handler` can be provided and
+        will be called whenever data arrives from the device asynchronously.
 
         `disconnect_handler` can be provided to be called to run
         upon a disconnect.
         """
         self._user_disconnect_handler = disconnect_handler
-        self._user_lua_response_handler = lua_response_handler
+        self._user_print_response_handler = print_response_handler
         self._user_data_response_handler = data_response_handler
 
         device = await BleakScanner.find_device_by_filter(
@@ -122,28 +121,27 @@ class Bluetooth:
             return 0
 
     async def _transmit(self, data, show_me=False):
-        # TODO make this print nicer
         if show_me:
-            print(data)
+            print(data)  # TODO make this print nicer
 
         if len(data) > self._client.mtu_size - 3:
             raise Exception("payload length is too large")
 
         await self._client.write_gatt_char(self._tx_characteristic, data)
 
-    async def send_lua(self, string: str, show_me=False, wait=False):
+    async def send_lua(self, string: str, show_me=False, await_print=False):
         """
         Sends a Lua string to the device. The string length must be less than or
         equal to `max_lua_payload()`.
 
-        If `wait=True`, the response will be returned. This is useful for Lua
-        `print()` statements.
+        If `await_print=True`, the function will block until a Lua print()
+        occurs, or a timeout.
 
         If `show_me=True`, the exact bytes send to the device will be printed.
         """
         await self._transmit(string.encode(), show_me=show_me)
 
-        if wait:
+        if await_print:
             self._awaiting_response = True
             countdown = 5000
 
@@ -155,7 +153,7 @@ class Bluetooth:
 
             return self._response_data.decode()
 
-    async def send_data(self, data: bytearray, show_me: bool = False):
+    async def send_data(self, data: bytearray, show_me=False):
         """
         Sends raw data to the device. The payload length must be less than or
         equal to `max_data_payload()`.
