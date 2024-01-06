@@ -1,6 +1,12 @@
+import sys
 import argparse
 from importlib.metadata import version
-from create_sprites import create_sprite_file
+
+if __name__ == "__main__":
+    sys.path.append("src.frameutils")
+    from create_sprites import create_sprite_file
+else:
+    from .create_sprites import create_sprite_file
 
 
 def main():
