@@ -49,7 +49,7 @@ class DataTable:
             f.write("    size_t data_offset;\n")
             f.write("} sprite_metadata_t;\n\n")
 
-            f.write("sprite_metadata_t sprite_metadata")
+            f.write("const sprite_metadata_t sprite_metadata")
             f.write("[" + str(len(self.metadata)) + "] = {\n")
 
             for idx, row in enumerate(self.metadata):
@@ -61,7 +61,7 @@ class DataTable:
                 f.write("0x{:08X}".format(row.offset) + "},\n")
             f.write("};\n\n")
 
-            f.write("uint8_t font_data[" + str(len(self.data)) + "] = {")
+            f.write("const uint8_t sprite_data[" + str(len(self.data)) + "] = {")
             for idx, value in enumerate(self.data):
                 if idx % 12 == 0:
                     f.write("\n    ")
