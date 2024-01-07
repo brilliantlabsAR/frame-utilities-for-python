@@ -4,19 +4,25 @@
         {
             "label": "Build Package",
             "type": "shell",
-            "command": "rm -rf dist && python3 -m build",
+            "command": "rm -rf dist && ${command:python.interpreterPath} -m build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Install Package",
+            "type": "shell",
+            "command": "${command:python.interpreterPath} -m pip install --upgrade --force-reinstall --ignore-installed dist/frameutils-*.tar.gz",
             "problemMatcher": []
         },
         {
             "label": "Upload Package",
             "type": "shell",
-            "command": "python3 -m twine upload --repository pypi dist/*",
+            "command": "${command:python.interpreterPath} -m twine upload --repository pypi dist/*",
             "problemMatcher": []
         },
         {
             "label": "Update Tools",
             "type": "shell",
-            "command": "python3 -m pip install --upgrade pip build twine",
+            "command": "${command:python.interpreterPath} -m pip install --upgrade pip build twine",
             "problemMatcher": []
         }
     ]
