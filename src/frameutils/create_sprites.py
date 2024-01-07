@@ -7,8 +7,8 @@ import re
 
 
 class FontMetadata:
-    def __init__(self, utf8_code, width, height, color_mode, size):
-        self.utf8_code = utf8_code
+    def __init__(self, utf8_codepoint, width, height, color_mode, size):
+        self.utf8_codepoint = utf8_codepoint
         self.width = width
         self.height = height
         self.color_mode = color_mode
@@ -35,14 +35,14 @@ class DataTable:
 
             f.write("typedef enum sprite_colors_t\n")
             f.write("{\n")
-            f.write("    SPRITE_2_COLORS,\n")
-            f.write("    SPRITE_4_COLORS,\n")
-            f.write("    SPRITE_16_COLORS,\n")
+            f.write("    SPRITE_2_COLORS = 2,\n")
+            f.write("    SPRITE_4_COLORS = 4,\n")
+            f.write("    SPRITE_16_COLORS = 16,\n")
             f.write("} sprite_colors_t;\n\n")
 
             f.write("typedef struct sprite_metadata_t\n")
             f.write("{\n")
-            f.write("    uint16_t utf8_code;\n")
+            f.write("    uint32_t utf8_codepoint;\n")
             f.write("    uint16_t height;\n")
             f.write("    uint16_t width;\n")
             f.write("    sprite_colors_t colors;\n")
@@ -50,18 +50,18 @@ class DataTable:
             f.write("} sprite_metadata_t;\n\n")
 
             f.write("const sprite_metadata_t sprite_metadata")
-            f.write("[" + str(len(self.metadata)) + "] = {\n")
+            f.write("[] = {\n")
 
             for idx, row in enumerate(self.metadata):
                 f.write("    {")
-                f.write("0x{:04X}".format(row.utf8_code) + ", ")
+                f.write("0x{:06X}".format(row.utf8_codepoint) + ", ")
                 f.write(str(row.width) + ", ")
                 f.write(str(row.height) + ", ")
                 f.write(row.color_mode + ", ")
                 f.write("0x{:08X}".format(row.offset) + "},\n")
             f.write("};\n\n")
 
-            f.write("const uint8_t sprite_data[" + str(len(self.data)) + "] = {")
+            f.write("const uint8_t sprite_data[] = {")
             for idx, value in enumerate(self.data):
                 if idx % 12 == 0:
                     f.write("\n    ")
@@ -71,8 +71,7 @@ class DataTable:
             f.write("};")
 
 
-def parse_file(image_path, colors):
-    utf8_code = int(image_path[-8:-4], 16)
+def parse_file(image_path, utf8_codepoint, colors):
     img = np.array(Image.open(image_path))
 
     # img[:,:,:3] is img without alpha channel
@@ -118,7 +117,7 @@ def parse_file(image_path, colors):
 
     return (
         FontMetadata(
-            utf8_code,
+            utf8_codepoint,
             shape[1],
             shape[0],
             color_mode,
@@ -132,9 +131,13 @@ def create_sprite_file(image_directory, output_filename, colors, as_header):
     data_table = DataTable()
 
     for filename in os.listdir(image_directory):
-        if re.search(r"[uU]\+[a-fA-F\d]+\.png", filename):
+        if re.search(r"[uU]\+[a-fA-F\d]{4,6}\.png", filename):
             print("Parsing " + filename)
-            metadata, data = parse_file(image_directory + "/" + filename, colors)
+            metadata, data = parse_file(
+                image_directory + "/" + filename,
+                int(filename[2:-4], 16),
+                colors,
+            )
             data_table.add(metadata, data)
 
     if as_header:
