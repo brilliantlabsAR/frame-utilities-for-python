@@ -14,7 +14,10 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
-dependencies = ["bleak"]
+dependencies = ["bleak", "numpy", "scikit-learn"]
+
+[project.scripts]
+frameutils = "frameutils.cli:main"
 
 [project.urls]
 "Homepage" = "https://github.com/brilliantlabsAR/frame-utilities-for-python"
