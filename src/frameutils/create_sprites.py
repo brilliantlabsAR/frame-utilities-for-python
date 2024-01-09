@@ -78,6 +78,23 @@ def parse_file(image_path, utf8_codepoint, colors):
     shape = img.shape
     flat_image = img[:, :, :3].reshape((shape[0] * shape[1], 3))
 
+    # If space character, skip clustering, return all zeros
+    if (utf8_codepoint == 0x20):
+        byte_list = [0] * (shape[0] * shape[1])
+
+        color_mode = "SPRITE_" + str(colors) + "_COLORS"
+
+        return (
+            FontMetadata(
+                utf8_codepoint,
+                shape[1],
+                shape[0],
+                color_mode,
+                len(byte_list),
+            ),
+            byte_list,
+        )
+        
     kmeans = KMeans(n_clusters=colors, random_state=0, n_init="auto").fit(flat_image)
 
     palleted_img = kmeans.predict(flat_image).astype(np.uint8)
@@ -99,11 +116,13 @@ def parse_file(image_path, utf8_codepoint, colors):
     pixels_left_in_byte = pixels_per_byte
     mask = colors - 1
 
-    for pixel in palleted_img:
+    for idx, pixel in enumerate(palleted_img):
         masked_value = pixel & mask
         if pixels_left_in_byte > 0:
             current_byte += masked_value << ((pixels_left_in_byte - 1) * bits_per_pixel)
             pixels_left_in_byte -= 1
+            if (idx == len(palleted_img)-1):
+                byte_list.append(current_byte)
         else:
             pixels_left_in_byte = pixels_per_byte - 1
             byte_list.append(current_byte)
