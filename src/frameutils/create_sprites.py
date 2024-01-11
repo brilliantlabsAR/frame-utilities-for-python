@@ -79,7 +79,7 @@ def parse_file(image_path, utf8_codepoint, colors):
     flat_image = img[:, :, :3].reshape((shape[0] * shape[1], 3))
 
     # If space character, skip clustering, return all zeros
-    if (utf8_codepoint == 0x20):
+    if utf8_codepoint == 0x20:
         byte_list = [0] * (shape[0] * shape[1])
 
         color_mode = "SPRITE_" + str(colors) + "_COLORS"
@@ -94,19 +94,22 @@ def parse_file(image_path, utf8_codepoint, colors):
             ),
             byte_list,
         )
-        
+
     kmeans = KMeans(n_clusters=colors, random_state=0, n_init="auto").fit(flat_image)
 
     palleted_img = kmeans.predict(flat_image).astype(np.uint8)
 
     # if black is not at index 0, swap it
-    black_code = kmeans.predict(np.array([255, 255, 255]).reshape(1, -1))
+    black_code = kmeans.predict(np.array([0, 0, 0]).reshape(1, -1))[0]
+
     if black_code != 0:
-        np.put(palleted_img, [0, 1], [1, 0])
+        masked_black_code = palleted_img == black_code
+        masked_0 = palleted_img == 0
+        palleted_img[masked_black_code] = 0
+        palleted_img[masked_0] = black_code
 
     # debug = palleted_img.reshape((shape[0], shape[1]))
-    # print('\n'.join([''.join(['{:2}'.format(item) for item in row])
-    #     for row in debug]))
+    # print("\n".join(["".join(["{:2}".format(item) for item in row]) for row in debug]))
 
     bits_per_pixel = int(math.sqrt(colors))
 
@@ -121,7 +124,7 @@ def parse_file(image_path, utf8_codepoint, colors):
         if pixels_left_in_byte > 0:
             current_byte += masked_value << ((pixels_left_in_byte - 1) * bits_per_pixel)
             pixels_left_in_byte -= 1
-            if (idx == len(palleted_img)-1):
+            if idx == len(palleted_img) - 1:
                 byte_list.append(current_byte)
         else:
             pixels_left_in_byte = pixels_per_byte - 1
