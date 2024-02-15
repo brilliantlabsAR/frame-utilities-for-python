@@ -71,8 +71,15 @@ class DataTable:
             f.write("};")
 
 
-def parse_file(image_path, utf8_codepoint, colors):
-    img = np.array(Image.open(image_path))
+def swap_array_values(array, value_a, value_b):
+    masked_a = array == value_a
+    masked_b = array == value_b
+    array[masked_a] = value_b
+    array[masked_b] = value_a
+    return array
+
+def parse_file(image_path, utf8_codepoint, colors, color_table):
+    img = np.array(Image.open(image_path).convert("RGBA"))
 
     # img[:,:,:3] is img without alpha channel
     shape = img.shape
@@ -95,19 +102,21 @@ def parse_file(image_path, utf8_codepoint, colors):
             byte_list,
         )
 
-    kmeans = KMeans(n_clusters=colors, random_state=0, n_init="auto").fit(flat_image)
-
-    palleted_img = kmeans.predict(flat_image).astype(np.uint8)
+    palleted_img = color_table.predict(flat_image).astype(np.uint8)
 
     # if black is not at index 0, swap it
-    black_code = kmeans.predict(np.array([0, 0, 0]).reshape(1, -1))[0]
+    black_code = color_table.predict(np.array([0, 0, 0]).reshape(1, -1))[0]
 
     if black_code != 0:
-        masked_black_code = palleted_img == black_code
-        masked_0 = palleted_img == 0
-        palleted_img[masked_black_code] = 0
-        palleted_img[masked_0] = black_code
+        palleted_img = swap_array_values(palleted_img, black_code, 0)
+    
+    # if white is not at index 1, swap it
+    white_code = color_table.predict(np.array([255, 255, 255]).reshape(1, -1))[0]
 
+    if white_code != 1:
+        palleted_img = swap_array_values(palleted_img, white_code, 1)
+
+    # print number image to terminal
     # debug = palleted_img.reshape((shape[0], shape[1]))
     # print("\n".join(["".join(["{:2}".format(item) for item in row]) for row in debug]))
 
@@ -152,6 +161,33 @@ def parse_file(image_path, utf8_codepoint, colors):
 def create_sprite_file(image_directory, output_filename, colors, as_header):
     data_table = DataTable()
 
+    flat_image_list = np.zeros((1,3))
+    for filename in os.listdir(image_directory):
+        if re.search(r"[uU]\+[a-fA-F\d]{4,6}\.png", filename):
+            img = np.array(Image.open(image_directory + "/" + filename).convert("RGBA"))
+            shape = img.shape
+            # img[:,:,:3] is img without alpha channel
+            flat_image = img[:,:,:3].reshape((shape[0] * shape[1], 3))
+            flat_image_list = np.append(flat_image_list, flat_image, axis=0)            
+
+    km = KMeans(n_clusters=colors, random_state=0, n_init="auto").fit(flat_image_list)
+    color_table = np.array(km.cluster_centers_, dtype=np.uint8)
+    black_code = km.predict(np.array([0, 0, 0]).reshape(1, -1))[0]
+    if black_code != 0:
+        value_black = color_table[black_code]
+        value_other = color_table[0]
+        color_table[0] = value_black
+        color_table[black_code] = value_other
+    
+    white_code = km.predict(np.array([255, 255, 255]).reshape(1, -1))[0]
+    if white_code != 1:
+        value_white = color_table[white_code]
+        value_other = color_table[1]
+        color_table[1] = value_white
+        color_table[white_code] = value_other
+    
+    print(color_table)
+
     for filename in os.listdir(image_directory):
         if re.search(r"[uU]\+[a-fA-F\d]{4,6}\.png", filename):
             print("Parsing " + filename)
@@ -159,6 +195,7 @@ def create_sprite_file(image_directory, output_filename, colors, as_header):
                 image_directory + "/" + filename,
                 int(filename[2:-4], 16),
                 colors,
+                km
             )
             data_table.add(metadata, data)
 
