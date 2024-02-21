@@ -126,7 +126,7 @@ def file_to_sprite(image_path, utf8_codepoint, colors, color_table_rgb):
             pixels_left_in_byte -= 1
 
     # write last byte if necessary
-    if pixels_left_in_byte > 0:
+    if pixels_left_in_byte != pixels_per_byte - 1:
         byte_list.append(current_byte)
 
     color_mode = "SPRITE_" + str(colors) + "_COLORS"
