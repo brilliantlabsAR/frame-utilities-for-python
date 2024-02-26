@@ -95,10 +95,14 @@ def file_to_sprite(image_path, utf8_codepoint, colors, color_table_rgb):
             byte_list,
         )
 
-    color_table_lab = cv2.cvtColor(color_table_rgb.reshape(1, colors, 3), cv2.COLOR_RGB2LAB).reshape(colors, 3)
-    
+    color_table_lab = cv2.cvtColor(
+        color_table_rgb.reshape(1, colors, 3), cv2.COLOR_RGB2LAB
+    ).reshape(colors, 3)
+
     # Work around: fit to color table for scipy kmeans to work properly
-    kmeans = KMeans(n_clusters=colors, n_init="auto", random_state=0).fit(color_table_lab)
+    kmeans = KMeans(n_clusters=colors, n_init="auto", random_state=0).fit(
+        color_table_lab
+    )
     kmeans.cluster_centers_ = np.array(color_table_lab, np.double)
 
     palleted_image = kmeans.predict(flat_image)
@@ -116,13 +120,17 @@ def file_to_sprite(image_path, utf8_codepoint, colors, color_table_rgb):
 
     for pixel in palleted_image:
         if pixels_left_in_byte > 0:
-            current_byte += ((pixel & mask) << ((pixels_left_in_byte - 1) * bits_per_pixel))
+            current_byte += (pixel & mask) << (
+                (pixels_left_in_byte - 1) * bits_per_pixel
+            )
             pixels_left_in_byte -= 1
 
         else:
             byte_list.append(current_byte)
             pixels_left_in_byte = pixels_per_byte
-            current_byte = ((pixel & mask) << ((pixels_left_in_byte - 1) * bits_per_pixel))
+            current_byte = (pixel & mask) << (
+                (pixels_left_in_byte - 1) * bits_per_pixel
+            )
             pixels_left_in_byte -= 1
 
     # write last byte if necessary
@@ -142,17 +150,22 @@ def file_to_sprite(image_path, utf8_codepoint, colors, color_table_rgb):
         byte_list,
     )
 
+
 def _rms(x0, x1, x2):
     return math.sqrt(x0**2 + x1**2 + x2**2)
+
 
 def _print_rgb(text, rgb):
     print(f"\x1b[38;2;{rgb[0]};{rgb[1]};{rgb[2]}m {text}\x1b[0m")
 
-def create_colour_table(image_directory, colors, color_table_lua):
+
+def create_color_table(image_directory, colors, color_table_lua):
     flat_image_list = []
     for filename in os.listdir(image_directory):
         if re.search(r"[uU]\+[a-fA-F\d]{4,6}\.png", filename):
-            image = cv2.cvtColor(cv2.imread(image_directory + "/" + filename), cv2.COLOR_BGR2LAB)
+            image = cv2.cvtColor(
+                cv2.imread(image_directory + "/" + filename), cv2.COLOR_BGR2LAB
+            )
             flat_image_list.extend(image)
 
     flat_image_list = np.concatenate(flat_image_list)
@@ -163,10 +176,12 @@ def create_colour_table(image_directory, colors, color_table_lua):
     color_table_rgb = cv2.cvtColor(color_table, cv2.COLOR_LAB2RGB).reshape(colors, 3)
 
     # Sort the table to go from dark to light
-    color_table_rgb = np.array(sorted(color_table_rgb, key=lambda x: _rms(x[0], x[1], x[2])))
-    
-    # Set table[1] == white (brightest colour)
-    color_table_rgb[[1, colors-1]] = color_table_rgb[[colors-1, 1]]
+    color_table_rgb = np.array(
+        sorted(color_table_rgb, key=lambda x: _rms(x[0], x[1], x[2]))
+    )
+
+    # Set table[1] == white (brightest color)
+    color_table_rgb[[1, colors - 1]] = color_table_rgb[[colors - 1, 1]]
 
     for i in color_table_rgb:
         _print_rgb(str(i), i)
@@ -176,10 +191,13 @@ def create_colour_table(image_directory, colors, color_table_lua):
         for idx, val in enumerate(color_table_rgb):
             print(f"frame.display.assign_color({idx+1},{val[0]},{val[1]},{val[2]})")
         print("#########")
-    
+
     return color_table_rgb
 
-def create_sprite_file(image_directory, output_filename, colors, color_table, as_header):
+
+def create_sprite_file(
+    image_directory, output_filename, colors, color_table, as_header
+):
     data_table = DataTable()
 
     for filename in os.listdir(image_directory):
@@ -189,7 +207,7 @@ def create_sprite_file(image_directory, output_filename, colors, color_table, as
                 image_directory + "/" + filename,
                 int(filename[2:-4], 16),
                 colors,
-                color_table
+                color_table,
             )
             data_table.add(metadata, data)
 

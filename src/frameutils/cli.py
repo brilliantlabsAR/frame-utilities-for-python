@@ -4,9 +4,9 @@ from importlib.metadata import version
 
 if __name__ == "__main__":
     sys.path.append("src.frameutils")
-    from create_sprites import create_sprite_file, create_colour_table
+    from create_sprites import create_sprite_file, create_color_table
 else:
-    from .create_sprites import create_sprite_file, create_colour_table
+    from .create_sprites import create_sprite_file, create_color_table
 
 
 def main():
@@ -53,17 +53,15 @@ def main():
         "--lua",
         dest="color_table_lua",
         action="store_true",
-        help="emit colour table lua",
+        help="emit color table lua",
     )
 
     # Parse
     args = parser.parse_args()
 
     if args.create_sprites:
-        color_table = create_colour_table(
-            args.image_directory,
-            args.colors,
-            args.color_table_lua
+        color_table = create_color_table(
+            args.image_directory, args.colors, args.color_table_lua
         )
 
         create_sprite_file(
