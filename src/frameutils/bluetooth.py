@@ -24,9 +24,6 @@ class Bluetooth:
         self._user_disconnect_handler = lambda: None
         self._user_print_response_handler = lambda: None
 
-    def _filter_uuid(self, _, adv):
-        return self._SERVICE_UUID in adv.service_uuids
-
     def _disconnect_handler(self, _):
         self._user_disconnect_handler()
         self.__init__()
@@ -62,19 +59,26 @@ class Bluetooth:
         self._user_print_response_handler = print_response_handler
         self._user_data_response_handler = data_response_handler
 
-        device = await BleakScanner.find_device_by_filter(
-            self._filter_uuid,
-        )
+        # returns list of (BLEDevice, AdvertisementData)
+        devices = await BleakScanner.discover(3, return_adv=True)
 
-        if device is None:
+        filtered_list = []
+        for d in devices.values():
+            if self._SERVICE_UUID in d[1].service_uuids:
+                filtered_list.append(d)
+            
+        # connect to closest device
+        filtered_list.sort(key=lambda x: x[1].rssi, reverse=True)
+        try:
+            device = filtered_list[0][0]
+
+        except IndexError:
             raise Exception("no devices found")
 
         self._client = BleakClient(
             device,
             disconnected_callback=self._disconnect_handler,
         )
-
-        # TODO find a way to connect to the closest device (highest RSSI)
 
         await self._client.connect()
 
