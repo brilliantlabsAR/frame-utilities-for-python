@@ -1,6 +1,6 @@
 import asyncio
 
-from bleak import BleakClient, BleakScanner
+from bleak import BleakClient, BleakScanner, BleakError
 
 
 class Bluetooth:
@@ -66,7 +66,7 @@ class Bluetooth:
         for d in devices.values():
             if self._SERVICE_UUID in d[1].service_uuids:
                 filtered_list.append(d)
-            
+
         # connect to closest device
         filtered_list.sort(key=lambda x: x[1].rssi, reverse=True)
         try:
@@ -80,12 +80,15 @@ class Bluetooth:
             disconnected_callback=self._disconnect_handler,
         )
 
-        await self._client.connect()
+        try:
+            await self._client.connect()
 
-        await self._client.start_notify(
-            self._RX_CHARACTERISTIC_UUID,
-            self._notification_handler,
-        )
+            await self._client.start_notify(
+                self._RX_CHARACTERISTIC_UUID,
+                self._notification_handler,
+            )
+        except BleakError:
+            raise Exception("Device needs to be re-paired")
 
         service = self._client.services.get_service(
             self._SERVICE_UUID,
