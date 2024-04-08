@@ -1,0 +1,1 @@
+frame.bluetooth.receive_callback((function(d)frame.bluetooth.send(d)end))
