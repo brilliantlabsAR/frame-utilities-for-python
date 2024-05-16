@@ -127,9 +127,10 @@ def parse_file(image_path, utf8_codepoint, colors):
             if idx == len(palleted_img) - 1:
                 byte_list.append(current_byte)
         else:
-            pixels_left_in_byte = pixels_per_byte - 1
+            pixels_left_in_byte = pixels_per_byte
             byte_list.append(current_byte)
             current_byte = masked_value << ((pixels_left_in_byte - 1) * bits_per_pixel)
+            pixels_left_in_byte -= 1
 
     # write last byte if necessary
     if pixels_left_in_byte > 0:
