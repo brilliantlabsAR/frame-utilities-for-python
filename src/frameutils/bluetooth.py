@@ -206,3 +206,43 @@ class Bluetooth:
         If `show_me=True`, the exact bytes send to the device will be printed.
         """
         await self._transmit(bytearray(b"\x03"), show_me=show_me)
+    
+    async def send_file(self, filename, file_path=None, file_string=None):
+        """
+        Sends a file to Frame. Pass either a file path or a string to be uploaded.
+        """
+
+        data_string = ""
+        if (file_string != None):
+            data_string = file_string
+        
+        elif (file_path != None):
+            with open(file_path, 'r') as f:
+                data_string = f.read()
+
+        data_string = data_string.replace("'", "\\'")
+        data_string = data_string.replace('"', '\\"')
+        data_string = data_string.replace("\n", "\\n")
+
+        await self.send_break_signal()
+        await self.send_lua(f"f=frame.file.open('{filename}', 'w');print(nil)", await_print=True)
+
+        # exclude size of f:write("");print(nil)
+        max_chunk_size = self.max_lua_payload() - 22
+        current_offset = 0
+        while True:
+            chunk = ""
+            if max_chunk_size < len(data_string[current_offset:]):
+                if data_string[current_offset+max_chunk_size] == '\\':
+                    chunk = data_string[current_offset:current_offset+max_chunk_size-2]
+                    current_offset += max_chunk_size - 2
+                else:
+                    chunk = data_string[current_offset:current_offset+max_chunk_size]
+                    current_offset += max_chunk_size
+                await self.send_lua(f'f:write("{chunk}");print(nil)', await_print=True)
+            else:
+                chunk = data_string[current_offset:]
+                await self.send_lua(f'f:write("{chunk}");print(nil)', await_print=True)
+                break
+            
+        await self.send_lua('f:close()')

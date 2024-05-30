@@ -69,6 +69,40 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
         await b.disconnect()
 
+    async def test_send_file_string(self):
+        b = Bluetooth()
+        await b.connect()
+
+        lua_string = """
+            frame.bluetooth.receive_callback((function(d)frame.bluetooth.send(d)end))
+        """
+
+        await b.send_file(filename='main.lua', file_string=lua_string)
+        await asyncio.sleep(0.1)
+        await b.send_reset_signal()
+        await asyncio.sleep(1)
+
+        self.assertEqual(await b.send_data(b"test", await_data=True), bytearray(b'test'))
+
+        await b.send_lua("frame.file.remove('main.lua'); print(nil)", await_print=True)
+
+        await b.disconnect()
+    
+    async def test_send_file_path(self):
+        b = Bluetooth()
+        await b.connect()
+
+        await b.send_file(filename='main.lua', file_path='test.lua')
+        await asyncio.sleep(0.1)
+        await b.send_reset_signal()
+        await asyncio.sleep(1)
+
+        self.assertEqual(await b.send_data(b"test", await_data=True), bytearray(b'test'))
+
+        await b.send_lua("frame.file.remove('main.lua'); print(nil)", await_print=True)
+
+        await b.disconnect()
+
 
 if __name__ == "__main__":
     unittest.main()
