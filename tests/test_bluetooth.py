@@ -3,8 +3,7 @@ import asyncio
 import sys
 
 sys.path.append("..")
-from src.frameutils import Bluetooth
-
+from src.frameutils import Bluetooth, Frame
 
 class TestBluetooth(unittest.IsolatedAsyncioTestCase):
     async def test_connect_disconnect(self):
@@ -69,6 +68,24 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
         await b.disconnect()
 
+
+    async def test_long_send(self):
+        """
+        Test sending lua over the MTU limit to the device and ensure it still works.
+        """
+        f = Frame()
+        a_count = 32
+        script = "a = 0;" + " ".join(f"a = a + 1;" for _ in range(a_count)) + "print(a)"
+        response = await f.send_long_lua(script, await_print=True)
+        self.assertEqual(str(a_count), response)
+        
+        a_count = 250
+        script = "a = 0;" + " ".join(f"a = a + 1;" for _ in range(a_count)) + "print(a)"
+        response = await f.send_long_lua(script, await_print=True)
+        self.assertEqual(str(a_count), response)
+        
+        await f.bluetooth.disconnect()
+        
 
 if __name__ == "__main__":
     unittest.main()

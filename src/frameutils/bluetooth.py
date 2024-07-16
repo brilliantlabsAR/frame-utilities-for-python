@@ -23,6 +23,7 @@ class Bluetooth:
         self._user_data_response_handler = lambda: None
         self._user_disconnect_handler = lambda: None
         self._user_print_response_handler = lambda: None
+        self._print_debugging = False
 
     def _disconnect_handler(self, _):
         self._user_disconnect_handler()
@@ -131,9 +132,15 @@ class Bluetooth:
             return self._client.mtu_size - 4
         except AttributeError:
             return 0
+        
+    def set_print_debugging(self, value: bool):
+        """
+        Sets whether to print debugging information when sending data.
+        """
+        self._print_debugging = value
 
     async def _transmit(self, data, show_me=False):
-        if show_me:
+        if show_me or self._print_debugging:
             print(data)  # TODO make this print nicer
 
         if len(data) > self._client.mtu_size - 3:
