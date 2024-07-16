@@ -91,18 +91,17 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
         Test receiving lua over the MTU limit from the device and ensure it still works.
         """
         f = Frame()
-        await f.inject_all_library_functions()
     
-        self.assertEqual(await f.bluetooth.send_lua("prntLng('hi')", await_print=True), "hi")
+        self.assertEqual(await f.run_lua("prntLng('hi')", await_print=True), "hi")
         msg = "hello world! "
         msg = msg + msg
         msg = msg + msg
         msg = msg + msg
         msg = msg + msg
         msg = msg + msg
-        await f.bluetooth.send_lua("msg = \"hello world! \";msg = msg .. msg;msg = msg .. msg;msg = msg .. msg;msg = msg .. msg;msg = msg .. msg", await_print=False)
-        self.assertEqual("about to send 416 characters.",(await f.bluetooth.send_lua("print('about to send '..tostring(string.len(msg))..' characters.')", await_print=True)))
-        self.assertEqual(msg, await f.bluetooth.send_lua("prntLng(msg)", await_print=True))
+        await f.run_lua("msg = \"hello world! \";msg = msg .. msg;msg = msg .. msg;msg = msg .. msg;msg = msg .. msg;msg = msg .. msg", await_print=False)
+        self.assertEqual("about to send 416 characters.",(await f.run_lua("print('about to send '..tostring(string.len(msg))..' characters.')", await_print=True)))
+        self.assertEqual(msg, await f.evaluate("msg"))
         
         await f.bluetooth.disconnect()
 
@@ -111,7 +110,6 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
         Test sending and receiving lua over the MTU limit to the device and ensure it still works.
         """
         f = Frame()
-        await f.inject_all_library_functions()
     
         a_count = 2
         message = "".join(f"and #{i}, " for i in range(a_count))

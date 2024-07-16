@@ -1,3 +1,4 @@
+#Injecting this as lua code is a hack, it ideally would be handled on the frame itself internal to the built-in print() function
 library_print_long = """
 local mtu = frame.bluetooth.max_length()
 function prntLng(stringToPrint)

@@ -16,9 +16,10 @@ class Frame:
         self.files = FrameFileSystem(self.bluetooth)
         
     async def ensure_connected(self):
-        """Ensure the Frame is connected."""
+        """Ensure the Frame is connected, establishing a connection if not"""
         if not self.bluetooth.is_connected():
             await self.bluetooth.connect()
+            await self.inject_all_library_functions()
 
     async def evaluate(self, lua_expression: str) -> str:
         """Evaluates a lua expression on the device and return the result."""
@@ -26,7 +27,10 @@ class Frame:
         return await self.run_lua(f"prntLng({lua_expression})", await_print=True)
 
     async def run_lua(self, lua_string: str, await_print: bool = False) -> Optional[str]:
-        """Run a Lua string on the device, automatically determining the appropriate method based on length."""
+        """
+        Run a Lua string on the device, automatically determining the appropriate method based on length.
+        If `await_print=True`, the function will block until a Lua print() occurs, or a timeout.
+        """
         
         # replace any print() calls with prntLng() calls
         # TODO: this is a dirty hack and instead we should fix the implementation of print() in the Frame
