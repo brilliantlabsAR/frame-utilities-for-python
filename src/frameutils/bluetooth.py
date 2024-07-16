@@ -18,6 +18,8 @@ class Bluetooth:
         self._awaiting_data_response = False
         self._client = None
         self._print_response = bytearray()
+        self._ongoing_print_response = None
+        self._ongoing_print_response_chunk_count = None
         self._data_response = bytearray()
         self._tx_characteristic = None
         self._user_data_response_handler = lambda: None
@@ -35,6 +37,34 @@ class Bluetooth:
                 self._awaiting_data_response = False
                 self._data_response = data[1:]
             self._user_data_response_handler(data[1:])
+        elif data[0] == 10:
+            # start of long printed data
+            if self._ongoing_print_response is None or self._ongoing_print_response_chunk_count is None:
+                self._ongoing_print_response = bytearray()
+                self._ongoing_print_response_chunk_count = 0
+                if self._print_debugging:
+                    print("starting receiving new long printed data")
+            self._ongoing_print_response += data[1:]
+            self._ongoing_print_response_chunk_count += 1
+            if self._print_debugging:
+                print(f"received chunk #{self._ongoing_print_response_chunk_count}: "+data[1:].decode())
+        elif data[0] == 11:
+            # end of long printed data
+            total_expected_chunk_count_as_string = data[1:].decode()
+            if len(total_expected_chunk_count_as_string) > 0:
+                total_expected_chunk_count = int(total_expected_chunk_count_as_string)
+                if self._print_debugging:
+                    print(f"received final chunk count: {total_expected_chunk_count}")
+                if self._ongoing_print_response_chunk_count != total_expected_chunk_count:
+                    raise Exception("chunk count mismatch in long received data")
+            
+            self._awaiting_print_response = False
+            self._print_response = self._ongoing_print_response.decode()
+            self._ongoing_print_response = None
+            self._ongoing_print_response_chunk_count = None
+            if self._print_debugging:
+                print("finished receiving long printed data: "+self._print_response)
+            self._user_print_response_handler(self._print_response)
         else:
             if self._awaiting_print_response:
                 self._awaiting_print_response = False

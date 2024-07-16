@@ -86,6 +86,46 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
         
         await f.bluetooth.disconnect()
         
+    async def test_long_receive(self):
+        """
+        Test receiving lua over the MTU limit from the device and ensure it still works.
+        """
+        f = Frame()
+        await f.inject_all_library_functions()
+    
+        self.assertEqual(await f.bluetooth.send_lua("prntLng('hi')", await_print=True), "hi")
+        msg = "hello world! "
+        msg = msg + msg
+        msg = msg + msg
+        msg = msg + msg
+        msg = msg + msg
+        msg = msg + msg
+        await f.bluetooth.send_lua("msg = \"hello world! \";msg = msg .. msg;msg = msg .. msg;msg = msg .. msg;msg = msg .. msg;msg = msg .. msg", await_print=False)
+        self.assertEqual("about to send 416 characters.",(await f.bluetooth.send_lua("print('about to send '..tostring(string.len(msg))..' characters.')", await_print=True)))
+        self.assertEqual(msg, await f.bluetooth.send_lua("prntLng(msg)", await_print=True))
+        
+        await f.bluetooth.disconnect()
+
+    async def test_long_send_and_receive(self):
+        """
+        Test sending and receiving lua over the MTU limit to the device and ensure it still works.
+        """
+        f = Frame()
+        await f.inject_all_library_functions()
+    
+        a_count = 2
+        message = "".join(f"and #{i}, " for i in range(a_count))
+        script = "message = \"\";" + "".join(f"message = message .. \"and #{i}, \"; " for i in range(a_count)) + "print(message)"
+        response = await f.run_lua(script, await_print=True)
+        self.assertEqual(message, response)
+        
+        a_count = 50
+        message = "".join(f"and #{i}, " for i in range(a_count))
+        script = "message = \"\";" + "".join(f"message = message .. \"and #{i}, \"; " for i in range(a_count)) + "print(message)"
+        response = await f.run_lua(script, await_print=True)
+        self.assertEqual(message, response)
+        
+        await f.bluetooth.disconnect()
 
 if __name__ == "__main__":
     unittest.main()

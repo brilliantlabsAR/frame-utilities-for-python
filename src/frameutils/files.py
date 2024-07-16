@@ -28,7 +28,7 @@ class FrameFileSystem:
             (";print(\"o\")" if checked else ""), await_print=checked)
         
         if checked and response != "o":
-            raise Exception("Couldn't open file for writing")
+            raise Exception(f"Couldn't open file \"{path}\" for writing")
         
         current_index = 0
         chunk_index = 0
@@ -41,9 +41,9 @@ class FrameFileSystem:
                 break
             
             # offset if on an escape character
-            while (data[current_index + next_chunk_length - 1] == b"\\" and next_chunk_length > 0):
+            while (data[current_index + next_chunk_length - 1] == 92 and next_chunk_length > 0):
                 next_chunk_length -= 1
-                
+            
             if next_chunk_length <= 0:
                 raise Exception("MTU too small to write file, or escape character at end of chunk")
             
