@@ -65,7 +65,7 @@ class Camera:
             raise Exception("Failed to get photo")
         
         if self.auto_process_photo:
-            image_buffer = self.process_photo(image_buffer)
+            image_buffer = self.process_photo(image_buffer, quality, autofocus_type)
         return image_buffer
     
     async def save_photo(self, filename: str, autofocus_seconds: Optional[int] = 3, quality: int = MEDIUM_QUALITY, autofocus_type: str = AUTOFOCUS_TYPE_AVERAGE):
@@ -74,12 +74,18 @@ class Camera:
         with open(filename, "wb") as f:
             f.write(image_buffer)
             
-    def process_photo(self, image_buffer: bytes) -> bytes:
+    def process_photo(self, image_buffer: bytes, quality: int, autofocus_type: str) -> bytes:
         """Process a photo to correct rotation and add metadata"""
         image = Image(image_buffer)
         image.orientation = 8
         image.make = "Brilliant Labs"
         image.model = "Frame"
         image.software = "Frame Python SDK"
+        if autofocus_type == self.AUTOFOCUS_TYPE_AVERAGE:
+            image.metering_mode = 1
+        elif autofocus_type == self.AUTOFOCUS_TYPE_CENTER_WEIGHTED:
+            image.metering_mode = 2
+        elif autofocus_type == self.AUTOFOCUS_TYPE_SPOT:
+            image.metering_mode = 3
         image.datetime_original = datetime.now().strftime("%Y:%m:%d %H:%M:%S")
         return image.get_file()

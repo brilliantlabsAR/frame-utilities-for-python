@@ -44,6 +44,10 @@ async def main():
 
         # take a photo and save to disk
         await f.camera.save_photo("frame-test-photo.jpg")
+        # or with more control
+        await f.camera.save_photo("frame-test-photo-2.jpg", autofocus_seconds=3, quality=f.camera.HIGH_QUALITY, autofocus_type=f.camera.AUTOFOCUS_TYPE_CENTER_WEIGHTED)
+        # or get the raw bytes
+        photo_bytes = await f.camera.take_photo(autofocus_seconds=1)
 
     print("disconnected")
 
