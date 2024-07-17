@@ -238,7 +238,7 @@ class Bluetooth:
 
             return self._print_response
     
-    async def wait_for_data(self, timeout: float = 30.0) -> bytearray:
+    async def wait_for_data(self, timeout: float = 30.0) -> bytes:
         """
         Waits until data has been received from the device, with a max timeout in seconds
         """
@@ -252,7 +252,7 @@ class Bluetooth:
                 raise Exception("device didn't respond")
             countdown -= 1
 
-        return self._data_response
+        return bytes(self._data_response)
 
     async def send_data(self, data: bytearray, show_me=False, await_data=False):
         """

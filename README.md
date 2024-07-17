@@ -42,6 +42,9 @@ async def main():
         # It will also automatically handle responses that are too long for the MTU automatically.
         print(await f.evaluate("1+2"))
 
+        # take a photo and save to disk
+        await f.camera.save_photo("frame-test-photo.jpg")
+
     print("disconnected")
 
 

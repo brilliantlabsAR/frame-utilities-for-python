@@ -1,4 +1,9 @@
+from __future__ import annotations
 import asyncio
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .frame import Frame
 
 class FrameFileSystem:
     """Helpers for accessing the Frame filesystem."""
@@ -13,9 +18,9 @@ class FrameFileSystem:
         b"]" : b"\\]",
     }
     
-    frame = None
+    frame : "Frame" = None
     
-    def __init__(self, frame):
+    def __init__(self, frame: "Frame"):
         self.frame = frame
     
     async def write_file(self, path: str, data: bytes, checked: bool = False):

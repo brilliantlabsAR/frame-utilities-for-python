@@ -2,18 +2,21 @@ import asyncio
 from typing import Optional
 from .bluetooth import Bluetooth
 from .files import FrameFileSystem
+from .camera import Camera
 import random
 import re
 
 class Frame:
     """Entrypoint to the Frame SDK"""
     
-    bluetooth = None
-    files = None
+    bluetooth : Bluetooth = None
+    files : FrameFileSystem = None
+    camera : Camera = None
     
     def __init__(self):
         self.bluetooth = Bluetooth()
         self.files = FrameFileSystem(self)
+        self.camera = Camera(self)
         
     async def __aenter__(self):
         await self.ensure_connected()
@@ -124,7 +127,7 @@ class Frame:
                 print(f"Requiring lib/{name}")
             response = await self.bluetooth.send_lua(f"require(\"lib/{name}\");print(\"l\")", await_print=True)
             if response != "l":
-                raise Exception("Error injecting library function")
+                raise Exception(f"Error injecting library function: {response}")
             
     async def inject_all_library_functions(self):
         """
