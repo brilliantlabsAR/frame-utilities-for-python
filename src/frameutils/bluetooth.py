@@ -20,6 +20,8 @@ class Bluetooth:
         self._print_response = bytearray()
         self._ongoing_print_response = None
         self._ongoing_print_response_chunk_count = None
+        self._ongoing_data_response = None
+        self._ongoing_data_response_chunk_count = None
         self._data_response = bytearray()
         self._tx_characteristic = None
         self._user_data_response_handler = lambda: None
@@ -32,12 +34,8 @@ class Bluetooth:
         self.__init__()
 
     async def _notification_handler(self, _, data):
-        if data[0] == 1:
-            if self._awaiting_data_response:
-                self._awaiting_data_response = False
-                self._data_response = data[1:]
-            self._user_data_response_handler(data[1:])
-        elif data[0] == 10:
+        
+        if data[0] == 10:
             # start of long printed data
             if self._ongoing_print_response is None or self._ongoing_print_response_chunk_count is None:
                 self._ongoing_print_response = bytearray()
@@ -56,8 +54,7 @@ class Bluetooth:
                 if self._print_debugging:
                     print(f"received final chunk count: {total_expected_chunk_count}")
                 if self._ongoing_print_response_chunk_count != total_expected_chunk_count:
-                    raise Exception("chunk count mismatch in long received data")
-            
+                    raise Exception(f"chunk count mismatch in long received data (expected {total_expected_chunk_count}, got {self._ongoing_print_response_chunk_count})")
             self._awaiting_print_response = False
             self._print_response = self._ongoing_print_response.decode()
             self._ongoing_print_response = None
@@ -65,6 +62,45 @@ class Bluetooth:
             if self._print_debugging:
                 print("finished receiving long printed data: "+self._print_response)
             self._user_print_response_handler(self._print_response)
+    
+        elif data[0] == 1 and data[1] == 1:
+            # start of long raw data
+            if self._ongoing_data_response is None or self._ongoing_data_response_chunk_count is None:
+                self._ongoing_data_response = bytearray()
+                self._ongoing_data_response_chunk_count = 0
+                self._data_response = None
+                if self._print_debugging:
+                    print("starting receiving new long raw data")
+            self._ongoing_data_response += data[2:]
+            self._ongoing_data_response_chunk_count += 1
+            if self._print_debugging:
+                print(f"received data chunk #{self._ongoing_data_response_chunk_count}: {len(data[2:])} bytes")
+        elif data[0] == 1 and data[1] == 2:
+            # end of long raw data
+            total_expected_chunk_count_as_string = data[2:].decode()
+            if len(total_expected_chunk_count_as_string) > 0:
+                total_expected_chunk_count = int(total_expected_chunk_count_as_string)
+                if self._print_debugging:
+                    print(f"received final data chunk count: {total_expected_chunk_count}")
+                if self._ongoing_data_response_chunk_count != total_expected_chunk_count:
+                    raise Exception(f"chunk count mismatch in long received data (expected {total_expected_chunk_count}, got {self._ongoing_data_response_chunk_count})")
+            self._awaiting_data_response = False
+            self._data_response = self._ongoing_data_response
+            self._ongoing_data_response = None
+            self._ongoing_data_response_chunk_count = None
+            if self._print_debugging:
+                if self._data_response is None:
+                    print("finished receiving long raw data: No bytes")
+                else:
+                    print(f"finished receiving long raw data: {len(self._data_response)} bytes)")
+            self._user_data_response_handler(self._data_response)
+        elif data[0] == 1:
+            if self._print_debugging:
+                print(f"received data: {len(data[1:])} bytes")
+            if self._awaiting_data_response:
+                self._awaiting_data_response = False
+                self._data_response = data[1:]
+            self._user_data_response_handler(data[1:])
         else:
             if self._awaiting_print_response:
                 self._awaiting_print_response = False
@@ -192,7 +228,7 @@ class Bluetooth:
 
         if await_print:
             self._awaiting_print_response = True
-            countdown = 5000
+            countdown = 10000
 
             while self._awaiting_print_response:
                 await asyncio.sleep(0.001)
@@ -201,6 +237,22 @@ class Bluetooth:
                 countdown -= 1
 
             return self._print_response
+    
+    async def wait_for_data(self, timeout: float = 30.0) -> bytearray:
+        """
+        Waits until data has been received from the device, with a max timeout in seconds
+        """
+        
+        self._awaiting_data_response = True
+        countdown = timeout * 1000
+
+        while self._awaiting_data_response:
+            await asyncio.sleep(0.001)
+            if countdown == 0:
+                raise Exception("device didn't respond")
+            countdown -= 1
+
+        return self._data_response
 
     async def send_data(self, data: bytearray, show_me=False, await_data=False):
         """
@@ -233,6 +285,8 @@ class Bluetooth:
 
         If `show_me=True`, the exact bytes send to the device will be printed.
         """
+        if not self.is_connected():
+            await self.connect()
         await self._transmit(bytearray(b"\x04"), show_me=show_me)
 
     async def send_break_signal(self, show_me=False):
@@ -242,4 +296,6 @@ class Bluetooth:
 
         If `show_me=True`, the exact bytes send to the device will be printed.
         """
+        if not self.is_connected():
+            await self.connect()
         await self._transmit(bytearray(b"\x03"), show_me=show_me)

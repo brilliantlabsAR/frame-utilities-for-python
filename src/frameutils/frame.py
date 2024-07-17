@@ -13,18 +13,15 @@ class Frame:
     
     def __init__(self):
         self.bluetooth = Bluetooth()
-        self.files = FrameFileSystem(self.bluetooth)
+        self.files = FrameFileSystem(self)
         
-    def __enter__(self):
+    async def __aenter__(self):
+        await self.ensure_connected()
         return self
     
-    def __exit__(self, exc_type, exc_value, traceback):
+    async def __aexit__(self, exc_type, exc_value, traceback):
         if self.bluetooth.is_connected():
-            event_loop = asyncio.get_running_loop()
-            if event_loop.is_running():
-                task = asyncio.create_task(self.bluetooth.disconnect())
-            else:
-                asyncio.run(self.bluetooth.disconnect())
+            await self.bluetooth.disconnect()
         
     async def ensure_connected(self):
         """Ensure the Frame is connected, establishing a connection if not"""
