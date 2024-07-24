@@ -21,15 +21,15 @@ class Frame:
         self.camera = Camera(self)
         self.display = Display(self)
         
-    async def __aenter__(self):
+    async def __aenter__(self) -> 'Frame':
         await self.ensure_connected()
         return self
     
-    async def __aexit__(self, exc_type, exc_value, traceback):
+    async def __aexit__(self, exc_type: Optional[type], exc_value: Optional[BaseException], traceback: Optional[object]) -> None:
         if self.bluetooth.is_connected():
             await self.bluetooth.disconnect()
         
-    async def ensure_connected(self):
+    async def ensure_connected(self) -> None:
         """Ensure the Frame is connected, establishing a connection if not"""
         if not self.bluetooth.is_connected():
             await self.bluetooth.connect()
@@ -97,7 +97,7 @@ class Frame:
         response = await self.evaluate("frame.battery_level()")
         return int(float(response))
     
-    async def sleep(self, seconds: Optional[float]):
+    async def sleep(self, seconds: Optional[float]) -> None:
         """Sleeps for a given number of seconds. seconds can be a decimal number such as 1.25. If no argument is given, Frame will go to sleep until a tap gesture wakes it up."""
         await self.ensure_connected()
         if seconds is None:
@@ -105,14 +105,14 @@ class Frame:
         else:
             await self.run_lua(f"frame.sleep({seconds})")
             
-    async def stay_awake(self, value: bool):
+    async def stay_awake(self, value: bool) -> None:
         """Prevents Frame from going to sleep while it's docked onto the charging cradle.
         This can help during development where continuous power is needed, however may
         degrade the display or cause burn-in if used for extended periods of time."""
         await self.ensure_connected()
-        await self.run_lua(f"frame.stay_awake({str(value).lower()})",checked=True)
+        await self.run_lua(f"frame.stay_awake({str(value).lower()})", checked=True)
     
-    async def inject_library_function(self, name: str, function: str):
+    async def inject_library_function(self, name: str, function: str) -> None:
         """
         Inject a function into the global environment of the device.
         """
@@ -142,7 +142,7 @@ class Frame:
             if response != "l":
                 raise Exception(f"Error injecting library function: {response}")
             
-    async def inject_all_library_functions(self):
+    async def inject_all_library_functions(self) -> None:
         """
         Inject all library functions into the global environment of the device.
         """

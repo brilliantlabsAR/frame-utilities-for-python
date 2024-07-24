@@ -8,12 +8,12 @@ if TYPE_CHECKING:
 class FrameFileSystem:
     """Helpers for accessing the Frame filesystem."""
     
-    frame : "Frame" = None
+    frame: "Frame" = None
     
     def __init__(self, frame: "Frame"):
         self.frame = frame
     
-    async def write_file(self, path: str, data: bytes, checked: bool = False):
+    async def write_file(self, path: str, data: bytes, checked: bool = False) -> None:
         """Write a file to the device."""
         
         response = await self.frame.bluetooth.send_lua(

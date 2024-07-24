@@ -174,15 +174,3 @@ function scrollText(text, line_height, total_height, lines_per_frame, delay)
     end
 end
 """
-
-"""for j = first_line_index, #lines do
-            local line = lines[j]
-            frame.display.text(line, 1, line_height - first_line_offset + j * line_height)
-            if j * line_height > 400 - line_height then
-                break
-            end
-        end
-        frame.display.draw_rect(1, 1, 640, line_height, 15)
-        frame.display.draw_rect(1, 400 - line_height, 640, line_height, 15)
-        frame.display.show()
-        i = i + lines_per_frame"""

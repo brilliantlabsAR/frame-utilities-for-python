@@ -1,5 +1,4 @@
 from __future__ import annotations
-import asyncio
 from typing import Optional, TYPE_CHECKING
 from exif import Image
 from datetime import datetime
