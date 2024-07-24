@@ -7,16 +7,6 @@ if TYPE_CHECKING:
 
 class FrameFileSystem:
     """Helpers for accessing the Frame filesystem."""
-
-    lua_escape_table = {
-        b"\\" : b"\\\\",
-        b"\n" : b"\\n",
-        b"\r" : b"\\r",
-        b"\t" : b"\\t",
-        b"\"" : b"\\\"",
-        b"[" : b"\\[",
-        b"]" : b"\\]",
-    }
     
     frame : "Frame" = None
     
@@ -30,12 +20,12 @@ class FrameFileSystem:
             f"w=frame.file.open(\"{path}\",\"write\")" +
             (";print(\"o\")" if checked else ""), await_print=checked)
         if checked and response != "o":
-            raise Exception(f"Couldn't open file \"{path}\" for writing")
+            raise Exception(f"Couldn't open file \"{path}\" for writing: {response}")
         response = await self.frame.bluetooth.send_lua(
             f"frame.bluetooth.receive_callback((function(d)w:write(d)end))" +
             (";print(\"c\")" if checked else ""), await_print=checked)
         if checked and response != "c":
-            raise Exception(f"Couldn't register callback for writing to file \"{path}\"")
+            raise Exception(f"Couldn't register callback for writing to file \"{path}\": {response}")
         
         current_index = 0
         while current_index < len(data):
@@ -84,3 +74,4 @@ class FrameFileSystem:
         await self.frame.run_lua(f"printCompleteFile(\"{path}\")")
         result : bytes = await self.frame.bluetooth.wait_for_data()
         return result.strip()
+    

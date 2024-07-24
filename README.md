@@ -43,11 +43,29 @@ async def main():
         print(await f.evaluate("1+2"))
 
         # take a photo and save to disk
+        await f.display.show_text("Taking photo...", 200, 150)
         await f.camera.save_photo("frame-test-photo.jpg")
+        await f.display.show_text("Photo saved!", 200, 150)
         # or with more control
         await f.camera.save_photo("frame-test-photo-2.jpg", autofocus_seconds=3, quality=f.camera.HIGH_QUALITY, autofocus_type=f.camera.AUTOFOCUS_TYPE_CENTER_WEIGHTED)
         # or get the raw bytes
         photo_bytes = await f.camera.take_photo(autofocus_seconds=1)
+
+        # Show the full palette
+        width = 640 // 4
+        height = 400 // 4
+        for color in range(0, 16):
+            tile_x = (color % 4)
+            tile_y = (color // 4)
+            await f.display.draw_rect(tile_x*width+1, tile_y*height+1, width, height, color)
+            await f.display.write_text(f"{color}", tile_x*width+width//2+1, tile_y*height+height//2+1)
+        await f.display.show()
+        await asyncio.sleep(5)
+
+        # scroll some long text
+        await f.display.scroll_text("Never gonna give you up\nNever gonna let you down\nNever gonna run around and desert you\nNever gonna make you cry\nNever gonna say goodbye\nNever gonna tell a lie and hurt you")
+
+
 
     print("disconnected")
 

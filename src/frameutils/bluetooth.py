@@ -1,4 +1,5 @@
 import asyncio
+from typing import Optional
 
 from bleak import BleakClient, BleakScanner, BleakError
 
@@ -17,7 +18,7 @@ class Bluetooth:
         self._awaiting_print_response = False
         self._awaiting_data_response = False
         self._client = None
-        self._print_response = bytearray()
+        self._print_response = ""
         self._ongoing_print_response = None
         self._ongoing_print_response_chunk_count = None
         self._ongoing_data_response = None
@@ -28,6 +29,7 @@ class Bluetooth:
         self._user_disconnect_handler = lambda: None
         self._user_print_response_handler = lambda: None
         self._print_debugging = False
+        self._default_timeout = 10.0
 
     def _disconnect_handler(self, _):
         self._user_disconnect_handler()
@@ -154,8 +156,8 @@ class Bluetooth:
                 self._RX_CHARACTERISTIC_UUID,
                 self._notification_handler,
             )
-        except BleakError:
-            raise Exception("Device needs to be re-paired")
+        except BleakError as e:
+            raise Exception("Device needs to be re-paired: "+str(e))
 
         service = self._client.services.get_service(
             self._SERVICE_UUID,
@@ -198,7 +200,23 @@ class Bluetooth:
             return self._client.mtu_size - 4
         except AttributeError:
             return 0
-        
+    
+    @property
+    def default_timeout(self) -> float:
+        """
+        Gets the default timeout value in seconds
+        """
+        return self._default_timeout
+
+    @default_timeout.setter
+    def default_timeout(self, value: float):
+        """
+        Sets the default timeout value in seconds
+        """
+        if value < 0:
+            raise ValueError("default_timeout must be a non-negative float")
+        self._default_timeout = value
+    
     def set_print_debugging(self, value: bool):
         """
         Sets whether to print debugging information when sending data.
@@ -214,7 +232,7 @@ class Bluetooth:
 
         await self._client.write_gatt_char(self._tx_characteristic, data)
 
-    async def send_lua(self, string: str, show_me=False, await_print=False):
+    async def send_lua(self, string: str, show_me=False, await_print=False, timeout: Optional[float] = None):
         """
         Sends a Lua string to the device. The string length must be less than or
         equal to `max_lua_payload()`.
@@ -227,22 +245,34 @@ class Bluetooth:
         await self._transmit(string.encode(), show_me=show_me)
 
         if await_print:
-            self._awaiting_print_response = True
-            countdown = 10000
+            return await self.wait_for_print(timeout)
+        
+    async def wait_for_print(self, timeout: float = None) -> str:
+        """
+        Waits until a Lua print() occurs, with a max timeout in seconds
+        """
+        if timeout is None:
+            timeout = self._default_timeout
 
-            while self._awaiting_print_response:
-                await asyncio.sleep(0.001)
-                if countdown == 0:
-                    raise Exception("device didn't respond")
-                countdown -= 1
+        self._awaiting_print_response = True
+        countdown = timeout * 1000
 
-            return self._print_response
+        while self._awaiting_print_response:
+            await asyncio.sleep(0.001)
+            if countdown == 0:
+                self._awaiting_print_response = False
+                raise Exception("device didn't respond")
+            countdown -= 1
+
+        return self._print_response
     
-    async def wait_for_data(self, timeout: float = 30.0) -> bytes:
+    async def wait_for_data(self, timeout: float = None) -> bytes:
         """
         Waits until data has been received from the device, with a max timeout in seconds
         """
-        
+        if timeout is None:
+            timeout = self._default_timeout
+
         self._awaiting_data_response = True
         countdown = timeout * 1000
 

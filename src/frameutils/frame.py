@@ -3,6 +3,7 @@ from typing import Optional
 from .bluetooth import Bluetooth
 from .files import FrameFileSystem
 from .camera import Camera
+from .display import Display
 import random
 import re
 
@@ -12,11 +13,13 @@ class Frame:
     bluetooth : Bluetooth = None
     files : FrameFileSystem = None
     camera : Camera = None
+    display : Display = None
     
     def __init__(self):
         self.bluetooth = Bluetooth()
         self.files = FrameFileSystem(self)
         self.camera = Camera(self)
+        self.display = Display(self)
         
     async def __aenter__(self):
         await self.ensure_connected()
@@ -37,7 +40,7 @@ class Frame:
         await self.ensure_connected()
         return await self.run_lua(f"prntLng(tostring({lua_expression}))", await_print=True)
 
-    async def run_lua(self, lua_string: str, await_print: bool = False) -> Optional[str]:
+    async def run_lua(self, lua_string: str, await_print: bool = False, checked: bool = False, timeout: Optional[float] = None) -> Optional[str]:
         """
         Run a Lua string on the device, automatically determining the appropriate method based on length.
         If `await_print=True`, the function will block until a Lua print() occurs, or a timeout.
@@ -48,11 +51,19 @@ class Frame:
         lua_string = re.sub(r'\bprint\(', 'prntLng(', lua_string)
         
         if len(lua_string) <= self.bluetooth.max_lua_payload():
-            return await self.bluetooth.send_lua(lua_string, await_print=await_print)
-        else:
-            return await self.send_long_lua(lua_string, await_print=await_print)
+            if checked and not await_print:
+                lua_string += ";print(\"+\")"
+                if len(lua_string) <= self.bluetooth.max_lua_payload():
+                    result = await self.bluetooth.send_lua(lua_string, await_print=True, timeout=timeout)
+                    if result != "+":
+                        raise Exception(f"Lua did not run successfully: {result}")
+                    return None
+            else:
+                return await self.bluetooth.send_lua(lua_string, await_print=await_print, timeout=timeout)
+        
+        return await self.send_long_lua(lua_string, await_print=await_print, checked=checked, timeout=timeout)
 
-    async def send_long_lua(self, string: str, await_print: bool = False) -> Optional[str]:
+    async def send_long_lua(self, string: str, await_print: bool = False, checked: bool = False, timeout: Optional[float] = None) -> Optional[str]:
         """
         Sends a Lua string to the device that is longer that the MTU limit and thus
         must be sent via writing to a file and requiring that file.
@@ -69,12 +80,14 @@ class Frame:
         
         await self.files.write_file(f"/{random_name}.lua", string.encode(), checked=True)
         if await_print:
-            response = await self.bluetooth.send_lua(f"require(\"{random_name}\")", await_print=True)
-        else:
-            response = await self.bluetooth.send_lua(f"require(\"{random_name}\");print('done')", await_print=True)
+            response = await self.bluetooth.send_lua(f"require(\"{random_name}\")", await_print=True, timeout=timeout)
+        elif checked:
+            response = await self.bluetooth.send_lua(f"require(\"{random_name}\");print('done')", await_print=True, timeout=timeout)
             if response != "done":
-                raise Exception("require() did not return 'done'")
+                raise Exception(f"require() did not return 'done': {response}")
             response = None
+        else:
+            response = await self.bluetooth.send_lua(f"require(\"{random_name}\")")
         await self.files.delete_file(f"/{random_name}.lua")
         return response
     
@@ -97,7 +110,7 @@ class Frame:
         This can help during development where continuous power is needed, however may
         degrade the display or cause burn-in if used for extended periods of time."""
         await self.ensure_connected()
-        await self.run_lua(f"frame.stay_awake({str(value).lower()})")
+        await self.run_lua(f"frame.stay_awake({str(value).lower()})",checked=True)
     
     async def inject_library_function(self, name: str, function: str):
         """
@@ -144,3 +157,8 @@ class Frame:
             if (self.bluetooth._print_debugging):
                 print("Did not create lib directory: "+response)
         await self.inject_library_function("prntLng", library_print_long)
+        
+    
+    def escape_lua_string(self, string: str) -> str:
+        """Escape a string for use in Lua."""
+        return string.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t").replace("\"", "\\\"").replace("[", "[").replace("]", "]")

@@ -127,4 +127,62 @@ function cameraCaptureAndSend(quality,autoExpTimeDelay,autofocusType)
         end
     end
 end
+function drawRect(x,y,width,height,color)
+	frame.display.bitmap(x,y,width,2,color,string.rep("\\xFF",math.floor(width/8*height)))
+end
+
+function scrollText(text, line_height, total_height, lines_per_frame, delay)
+    local lines = {}
+    local line_count = 1
+    local start = 1
+    while true do
+        local found_start, found_end = string.find(text, "\\n", start)
+        if not found_start then
+            table.insert(lines, string.sub(text, start))
+            break
+        end
+        table.insert(lines, string.sub(text, start, found_start - 1))
+        line_count = line_count + 1
+        start = found_end + 1
+    end
+    local i = 0
+    while i < total_height - (400 - line_height * 2) do
+        local start_time = frame.time.utc()
+		if i == 0 then
+			start_time = start_time + (2 * line_height / lines_per_frame * delay)
+		end
+        local first_line_index = math.floor(i / line_height) + 1
+        local first_line_offset = i % line_height
+        local y = line_height - first_line_offset
+        for j = first_line_index, line_count do
+            local line = lines[j]
+            frame.display.text(line, 1, y)
+            y = y + line_height
+            if y > 400 - line_height then
+                break
+            end
+        end
+        drawRect(1, 1, 640, line_height, 15)
+        drawRect(1, 400 - line_height, 640, line_height, 15)
+        frame.display.show()
+        while frame.time.utc() - start_time < delay do
+        end
+        i = i + lines_per_frame
+    end
+    extra_time = frame.time.utc() + (1 * line_height / lines_per_frame * delay)
+    while frame.time.utc() < extra_time do
+    end
+end
 """
+
+"""for j = first_line_index, #lines do
+            local line = lines[j]
+            frame.display.text(line, 1, line_height - first_line_offset + j * line_height)
+            if j * line_height > 400 - line_height then
+                break
+            end
+        end
+        frame.display.draw_rect(1, 1, 640, line_height, 15)
+        frame.display.draw_rect(1, 400 - line_height, 640, line_height, 15)
+        frame.display.show()
+        i = i + lines_per_frame"""
