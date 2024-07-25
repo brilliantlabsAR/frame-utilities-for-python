@@ -206,3 +206,19 @@ class Bluetooth:
         If `show_me=True`, the exact bytes send to the device will be printed.
         """
         await self._transmit(bytearray(b"\x03"), show_me=show_me)
+
+    async def upload_file(self, file, file_name="main.lua"):
+        """
+        Uploads a file as file_name. If the file exists, it will be overwritten.
+        """
+
+        await self.send_break_signal()
+
+        await self.send_lua(
+            f"f=frame.file.open('{file_name}','w');print(nil)", await_print=True
+        )
+
+        for line in file.splitlines():
+            await self.send_lua(f'f:write("{line}\\n");print(nil)', await_print=True)
+
+        await self.send_lua("f:close();print(nil)", await_print=True)
