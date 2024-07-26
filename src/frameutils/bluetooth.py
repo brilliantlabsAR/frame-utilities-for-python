@@ -1,6 +1,7 @@
 import asyncio
 
 from bleak import BleakClient, BleakScanner, BleakError
+import os
 
 
 class Bluetooth:
