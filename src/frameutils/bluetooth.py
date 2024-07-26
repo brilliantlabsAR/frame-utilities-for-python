@@ -219,7 +219,6 @@ class Bluetooth:
             with open(file, 'r') as f:
                 file = f.read()
 
-        file = file.replace('\\', '\\\\')
         file = file.replace("\n", "\\n")
         file = file.replace("'", "\\'")
         file = file.replace('"', '\\"')
