@@ -228,7 +228,7 @@ class Bluetooth:
                             await_print=True)
 
         index: int = 0
-        chunkSize: int = self.max_data_payload() - 22
+        chunkSize: int = self.max_lua_payload() - 22
 
         while index < len(file):
             if index + chunkSize > len(file):
@@ -240,7 +240,7 @@ class Bluetooth:
 
             chunk: str = file[index:index + chunkSize]
 
-            await self.send_lua(f'f:write("{chunk}\\n");print(nil)',
+            await self.send_lua(f'f:write("{chunk}");print(nil)',
                                 await_print=True)
 
             index += chunkSize
