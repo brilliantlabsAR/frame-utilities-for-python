@@ -69,17 +69,28 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
         await b.disconnect()
 
-    async def test_upload_file(self):
+    async def test_upload_from_file(self):
+        b = Bluetooth()
+        await b.connect()
+
+        self.assertIsNone(await b.upload_file("./tests/main.lua", "main.lua"))
+
+        self.assertIsNone(await b.send_lua("require('main')"))
+        await asyncio.sleep(1)
+
+        await b.disconnect()
+
+    async def test_upload_from_string(self):
         b = Bluetooth()
         await b.connect()
 
         lua_file = """
         while true do
-            frame.display.text('Hello', 10, 10)
+            frame.display.text('Hello world!', 10, 10)
             frame.display.show()
             frame.sleep(1)
 
-            frame.display.text('World', 10, 10)
+            frame.display.text('Test was run from string', 10, 10, { color = 'GREEN' })
             frame.display.show()
             frame.sleep(1)
         end
