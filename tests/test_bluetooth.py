@@ -12,11 +12,17 @@ class TestBluetooth(unittest.IsolatedAsyncioTestCase):
 
         self.assertFalse(b.is_connected())
 
-        await b.connect()
+        device_address = await b.connect()
         self.assertTrue(b.is_connected())
 
         await b.disconnect()
         self.assertFalse(b.is_connected())
+
+        with self.assertRaises(Exception):
+            await b.connect(address="78D97B6B-244B-AC86-047F-BBF72ADEB1F6")
+
+        await b.connect(address=device_address)
+        await b.disconnect()
 
     async def test_send_lua(self):
         b = Bluetooth()
