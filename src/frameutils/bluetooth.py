@@ -266,6 +266,7 @@ class Bluetooth:
 
             # Don't split on an escape character
             if file[index + chunkSize - 1] == "\\":
+            while file[index + chunkSize - 1] == '\\':
                 chunkSize -= 1
 
             chunk: str = file[index : index + chunkSize]
