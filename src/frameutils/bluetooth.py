@@ -265,7 +265,6 @@ class Bluetooth:
                 chunkSize = len(file) - index
 
             # Don't split on an escape character
-            if file[index + chunkSize - 1] == "\\":
             while file[index + chunkSize - 1] == '\\':
                 chunkSize -= 1
 
